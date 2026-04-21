@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { companies } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import path from "path";
+import { writeFile, mkdir } from "fs/promises";
+import crypto from "crypto";
+import { getExtension } from "@/lib/utils";
 
 export async function GET() {
     try {
@@ -15,8 +19,31 @@ export async function GET() {
 
 export async function POST(request: Request) {
     try {
-        const body = await request.json();
-        const { name, description } = body;
+        const contentType = request.headers.get("content-type") || "";
+        let name = "";
+        let logoUrl: string | null = null;
+
+        if (contentType.includes("multipart/form-data")) {
+            const formData = await request.formData();
+            name = formData.get("name") as string;
+            const logoFile = formData.get("logo") as File | null;
+
+            if (logoFile && logoFile.size > 0) {
+                const uploadDir = path.join(process.cwd(), "public", "uploads");
+                await mkdir(uploadDir, { recursive: true });
+
+                const bytes = await logoFile.arrayBuffer();
+                const buffer = Buffer.from(bytes);
+                const ext = getExtension(logoFile.type);
+                const filename = `${Date.now()}-${crypto.randomUUID()}.${ext}`;
+                const filepath = path.join(uploadDir, filename);
+                await writeFile(filepath, buffer);
+                logoUrl = `/uploads/${filename}`;
+            }
+        } else {
+            const body = await request.json();
+            name = body.name;
+        }
 
         if (!name) {
             return NextResponse.json({ error: "Missing required field: name" }, { status: 400 });
@@ -32,7 +59,7 @@ export async function POST(request: Request) {
         await db.insert(companies).values({
             id: newId,
             name,
-            description,
+            logoUrl,
         });
 
         const [newCompany] = await db.select().from(companies).where(eq(companies.id, newId));

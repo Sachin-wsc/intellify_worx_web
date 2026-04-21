@@ -10,10 +10,14 @@ export function cn(...inputs: ClassValue[]) {
 export function getExtension(mime: string) {
   const map: Record<string, string> = {
     "image/jpeg": "jpg",
+    "image/jpg": "jpg",
     "image/png": "png",
     "image/webp": "webp",
     "image/avif": "avif",
+    "image/svg+xml": "svg",
+    "image/gif": "gif",
+    "application/pdf": "pdf",
   };
 
-  return map[mime] || "bin";
+  return map[mime] || mime.split("/")[1] || "png";
 }

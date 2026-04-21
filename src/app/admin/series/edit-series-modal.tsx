@@ -7,33 +7,54 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useDropzone } from "react-dropzone";
 import { X, Upload } from "lucide-react";
+import Select from "react-select";
 import { getImageUrl } from "@/lib/image-utils";
 
-interface EditCompanyModalProps {
-    company: any;
+interface EditSeriesModalProps {
+    series: any;
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onSuccess: () => void;
 }
 
-export default function EditCompanyModal({ company, open, onOpenChange, onSuccess }: EditCompanyModalProps) {
+export default function EditSeriesModal({ series, open, onOpenChange, onSuccess }: EditSeriesModalProps) {
     const [loading, setLoading] = useState(false);
     const [name, setName] = useState("");
-    const [logo, setLogo] = useState<File & { preview: string } | null>(null);
-    const [existingLogo, setExistingLogo] = useState<string | null>(null);
+    const [selectedBrands, setSelectedBrands] = useState<any[]>([]);
+    const [icon, setIcon] = useState<File & { preview: string } | null>(null);
+    const [existingIcon, setExistingIcon] = useState<string | null>(null);
+    const [brands, setBrands] = useState<any[]>([]);
 
     useEffect(() => {
-        if (company && open) {
-            setName(company.name || "");
-            setExistingLogo(company.logoUrl || null);
-            setLogo(null);
+        if (open) {
+            fetch("/api/v1/master/brands")
+                .then(res => res.json())
+                .then(data => {
+                    if (Array.isArray(data)) {
+                        const options = data.map(b => ({ value: b.id, label: b.name }));
+                        setBrands(options);
+                        if (series && series.brands) {
+                            const currentBrands = options.filter(o => 
+                                series.brands.some((sb: any) => sb.id === o.value)
+                            );
+                            setSelectedBrands(currentBrands);
+                        }
+                    }
+                })
+                .catch(err => toast.error("Failed to load brands"));
+
+            if (series) {
+                setName(series.name || "");
+                setExistingIcon(series.iconUrl || null);
+                setIcon(null);
+            }
         }
-    }, [company, open]);
+    }, [open, series]);
 
     const onDrop = (acceptedFiles: File[]) => {
         const file = acceptedFiles[0];
         if (file) {
-            setLogo(Object.assign(file, {
+            setIcon(Object.assign(file, {
                 preview: URL.createObjectURL(file)
             }));
         }
@@ -47,27 +68,32 @@ export default function EditCompanyModal({ company, open, onOpenChange, onSucces
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (selectedBrands.length === 0) {
+            toast.error("Please select at least one brand");
+            return;
+        }
         setLoading(true);
 
         try {
             const formData = new FormData();
             formData.append("name", name);
-            if (logo) {
-                formData.append("logo", logo);
+            formData.append("brandIds", JSON.stringify(selectedBrands.map(b => b.value)));
+            if (icon) {
+                formData.append("icon", icon);
             }
 
-            const res = await fetch(`/api/v1/master/companies/${company.id}`, {
+            const res = await fetch(`/api/v1/master/series/${series.id}`, {
                 method: "PATCH",
                 body: formData,
             });
 
             if (res.ok) {
-                toast.success("Company updated successfully");
+                toast.success("Series updated successfully");
                 onOpenChange(false);
                 onSuccess();
             } else {
                 const data = await res.json().catch(() => ({}));
-                toast.error(data.error || "Failed to update company");
+                toast.error(data.error || "Failed to update series");
             }
         } catch (err: any) {
             toast.error(err.message || "An error occurred");
@@ -76,42 +102,55 @@ export default function EditCompanyModal({ company, open, onOpenChange, onSucces
         }
     };
 
-    if (!company) return null;
+    if (!series) return null;
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-md">
                 <DialogHeader>
-                    <DialogTitle className="text-2xl font-bold text-primary">Edit Company</DialogTitle>
+                    <DialogTitle className="text-2xl font-bold text-primary">Edit Series</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-6 mt-4">
                     <div className="space-y-4">
                         <div className="space-y-2">
-                            <Label htmlFor="edit-name" className="text-secondary-foreground font-semibold">Company Name <span className="text-red-500">*</span></Label>
+                            <Label htmlFor="edit-brand" className="text-secondary-foreground font-semibold">Select Brands <span className="text-red-500">*</span></Label>
+                            <Select
+                                isMulti
+                                options={brands}
+                                value={selectedBrands}
+                                onChange={(val: any) => setSelectedBrands(val)}
+                                placeholder="Select Brands..."
+                                isSearchable
+                                className="react-select-container"
+                                classNamePrefix="react-select"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="edit-name" className="text-secondary-foreground font-semibold">Series Name <span className="text-red-500">*</span></Label>
                             <Input
                                 id="edit-name"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
-                                placeholder="Enter company name"
+                                placeholder="Enter series name"
                                 required
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label className="text-secondary-foreground font-semibold">Company Logo</Label>
-                            {logo ? (
+                            <Label className="text-secondary-foreground font-semibold">Series Icon</Label>
+                            {icon ? (
                                 <div className="relative w-32 h-32 mx-auto border rounded-lg overflow-hidden group">
-                                    <img src={logo.preview} alt="Preview" className="w-full h-full object-contain" />
+                                    <img src={icon.preview} alt="Preview" className="w-full h-full object-contain" />
                                     <button
                                         type="button"
-                                        onClick={() => setLogo(null)}
+                                        onClick={() => setIcon(null)}
                                         className="absolute top-1 right-1 p-1 bg-black/50 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                                     >
                                         <X size={16} />
                                     </button>
                                 </div>
-                            ) : existingLogo ? (
+                            ) : existingIcon ? (
                                 <div className="relative w-32 h-32 mx-auto border rounded-lg overflow-hidden group">
-                                    <img src={getImageUrl(existingLogo)} alt="Existing Logo" className="w-full h-full object-contain" />
+                                    <img src={getImageUrl(existingIcon)} alt="Existing Icon" className="w-full h-full object-contain" />
                                     <div
                                         {...getRootProps()}
                                         className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
@@ -121,7 +160,7 @@ export default function EditCompanyModal({ company, open, onOpenChange, onSucces
                                     </div>
                                     <button
                                         type="button"
-                                        onClick={() => setExistingLogo(null)}
+                                        onClick={() => setExistingIcon(null)}
                                         className="absolute top-1 right-1 p-1 bg-black/50 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                                     >
                                         <X size={16} />
@@ -135,7 +174,7 @@ export default function EditCompanyModal({ company, open, onOpenChange, onSucces
                                 >
                                     <input {...getInputProps()} />
                                     <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                                    <p className="mt-2 text-sm text-gray-600">Drag & drop company logo here, or click to select</p>
+                                    <p className="mt-2 text-sm text-gray-600">Drag & drop series icon here, or click to select</p>
                                 </div>
                             )}
                         </div>

@@ -1,50 +1,53 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import NewProductModal from "./new-product-modal";
-import EditProductModal from "./edit-product-modal";
+import NewSeriesModal from "./new-series-modal";
+import EditSeriesModal from "./edit-series-modal";
+import { getImageUrl } from "@/lib/image-utils";
 
-export default function AdminProducts() {
-    const [products, setProducts] = useState<any[]>([]);
+export default function AdminSeries() {
+    const [series, setSeries] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [editingProduct, setEditingProduct] = useState<any | null>(null);
+    const [editingSeries, setEditingSeries] = useState<any | null>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
     // Delete Confirmation State
-    const [deletingProduct, setDeletingProduct] = useState<any | null>(null);
+    const [deletingSeries, setDeletingSeries] = useState<any | null>(null);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-    const fetchProducts = () => {
+    const fetchSeries = () => {
         setLoading(true);
-        fetch("/api/v1/products")
+        fetch("/api/v1/master/series")
             .then(res => res.json())
             .then(data => {
-                if (Array.isArray(data)) setProducts(data);
+                if (Array.isArray(data)) setSeries(data);
+            })
+            .catch(err => {
+                toast.error("Failed to fetch series");
             })
             .finally(() => setLoading(false));
     };
 
     useEffect(() => {
-        fetchProducts();
+        fetchSeries();
     }, []);
 
     const handleConfirmDelete = async () => {
-        if (!deletingProduct) return;
+        if (!deletingSeries) return;
         try {
-            const res = await fetch(`/api/v1/products/${deletingProduct.id}`, { method: "DELETE" });
+            const res = await fetch(`/api/v1/master/series/${deletingSeries.id}`, { method: "DELETE" });
             if (res.ok) {
-                toast.success("Product deleted successfully");
+                toast.success("Series deleted successfully");
                 setIsDeleteDialogOpen(false);
-                setDeletingProduct(null);
-                fetchProducts();
+                setDeletingSeries(null);
+                fetchSeries();
             } else {
                 const errorData = await res.json().catch(() => ({}));
-                toast.error(errorData.error || "Failed to delete product");
+                toast.error(errorData.error || "Failed to delete series");
             }
         } catch (err: any) {
             toast.error(err.message || "An error occurred while deleting");
@@ -55,10 +58,10 @@ export default function AdminProducts() {
         <div className="space-y-6">
             <div className="flex justify-between items-center bg-white p-6 rounded-lg shadow-sm border border-secondary/20">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-primary">Products</h1>
-                    <p className="text-muted-foreground mt-1">Manage physical drivers and specifications in the catalog.</p>
+                    <h1 className="text-3xl font-bold tracking-tight text-primary">Series</h1>
+                    <p className="text-muted-foreground mt-1">Manage series and their association with brands.</p>
                 </div>
-                <NewProductModal onSuccess={fetchProducts} />
+                <NewSeriesModal onSuccess={fetchSeries} />
             </div>
 
             <Card className="shadow-sm border-secondary/20 border">
@@ -66,42 +69,44 @@ export default function AdminProducts() {
                     <Table>
                         <TableHeader className="bg-secondary/30">
                             <TableRow>
-                                <TableHead className="font-semibold px-6">SKU / Part No</TableHead>
-                                <TableHead className="font-semibold">Name</TableHead>
-                                <TableHead className="font-semibold">Company</TableHead>
-                                <TableHead className="font-semibold">Motor Type</TableHead>
-                                <TableHead className="font-semibold">Status</TableHead>
+                                <TableHead className="font-semibold px-6 w-[100px]">Icon</TableHead>
+                                <TableHead className="font-semibold">Series Name</TableHead>
+                                <TableHead className="font-semibold">Brands</TableHead>
                                 <TableHead className="text-right font-semibold px-6">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {loading ? (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="text-center h-24">Loading inventory...</TableCell>
+                                    <TableCell colSpan={4} className="text-center h-24">Loading series...</TableCell>
                                 </TableRow>
-                            ) : products.length === 0 ? (
+                            ) : series.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="text-center h-24 text-muted-foreground">No products found. Add your first driver.</TableCell>
+                                    <TableCell colSpan={4} className="text-center h-24 text-muted-foreground">No series found. Add your first series.</TableCell>
                                 </TableRow>
                             ) : (
-                                products.map((p) => (
-                                    <TableRow key={p.id} className="hover:bg-secondary/10 transition-colors">
-                                        <TableCell className="font-mono text-sm px-6">{p.sku}</TableCell>
-                                        <TableCell className="font-medium text-primary">{p.name}</TableCell>
-                                        <TableCell>{p.companyName}</TableCell>
-                                        <TableCell>{p.motorTypeName}</TableCell>
-                                        <TableCell>
-                                            <Badge variant={p.isActive ? "default" : "secondary"} className={p.isActive ? "bg-green-100 text-green-800 hover:bg-green-200" : ""}>
-                                                {p.isActive ? "Active" : "Archived"}
-                                            </Badge>
+                                series.map((s) => (
+                                    <TableRow key={s.id} className="hover:bg-secondary/10 transition-colors">
+                                        <TableCell className="px-6">
+                                            {s.iconUrl ? (
+                                                <div className="w-10 h-10 rounded-md border overflow-hidden bg-white">
+                                                    <img src={getImageUrl(s.iconUrl)} alt={s.name} className="w-full h-full object-contain" />
+                                                </div>
+                                            ) : (
+                                                <div className="w-10 h-10 rounded-md border bg-secondary/20 flex items-center justify-center text-[10px] text-muted-foreground">
+                                                    No Icon
+                                                </div>
+                                            )}
                                         </TableCell>
+                                        <TableCell className="font-medium text-primary">{s.name}</TableCell>
+                                        <TableCell className="text-muted-foreground">{s.brandNames || "N/A"}</TableCell>
                                         <TableCell className="text-right px-6">
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
                                                 className="text-primary hover:bg-primary/10 mr-2"
                                                 onClick={() => {
-                                                    setEditingProduct(p);
+                                                    setEditingSeries(s);
                                                     setIsEditModalOpen(true);
                                                 }}
                                             >
@@ -112,7 +117,7 @@ export default function AdminProducts() {
                                                 size="sm"
                                                 className="text-destructive hover:bg-destructive/10"
                                                 onClick={() => {
-                                                    setDeletingProduct(p);
+                                                    setDeletingSeries(s);
                                                     setIsDeleteDialogOpen(true);
                                                 }}
                                             >
@@ -126,20 +131,21 @@ export default function AdminProducts() {
                     </Table>
                 </CardContent>
             </Card>
-            <EditProductModal
-                product={editingProduct}
+
+            <EditSeriesModal
+                series={editingSeries}
                 open={isEditModalOpen}
                 onOpenChange={setIsEditModalOpen}
-                onSuccess={fetchProducts}
+                onSuccess={fetchSeries}
             />
 
             {/* Custom Delete Confirmation Modal */}
             <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Delete Product</DialogTitle>
+                        <DialogTitle>Delete Series</DialogTitle>
                         <DialogDescription>
-                            Are you sure you want to delete <strong>{deletingProduct?.name}</strong>? This action cannot be undone and will remove all associated technical specifications.
+                            Are you sure you want to delete <strong>{deletingSeries?.name}</strong>? This action cannot be undone.
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter className="mt-4">

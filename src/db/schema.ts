@@ -199,8 +199,40 @@ export const motorSelections = mysqlTable("motor_selections", {
 export const companies = mysqlTable("companies", {
     id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
     name: varchar("name", { length: 255 }).unique().notNull(),
-    description: text("description"),
+    logoUrl: text("logo_url"),
     isActive: boolean("is_active").default(true).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export const brands = mysqlTable("brands", {
+    id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
+    name: varchar("name", { length: 255 }).unique().notNull(),
+    iconUrl: text("icon_url"),
+    isActive: boolean("is_active").default(true).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export const brandCompanies = mysqlTable("brand_companies", {
+    id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
+    brandId: varchar("brand_id", { length: 36 }).references(() => brands.id, { onDelete: "cascade" }).notNull(),
+    companyId: varchar("company_id", { length: 36 }).references(() => companies.id, { onDelete: "cascade" }).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const series = mysqlTable("series", {
+    id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
+    name: varchar("name", { length: 255 }).unique().notNull(),
+    iconUrl: text("icon_url"),
+    isActive: boolean("is_active").default(true).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export const seriesBrands = mysqlTable("series_brands", {
+    id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
+    seriesId: varchar("series_id", { length: 36 }).references(() => series.id, { onDelete: "cascade" }).notNull(),
+    brandId: varchar("brand_id", { length: 36 }).references(() => brands.id, { onDelete: "cascade" }).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
 });

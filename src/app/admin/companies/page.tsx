@@ -8,6 +8,8 @@ import { toast } from "sonner";
 import NewCompanyModal from "./new-company-modal";
 import EditCompanyModal from "./edit-company-modal";
 
+import { getImageUrl } from "@/lib/image-utils";
+
 export default function AdminCompanies() {
     const [companies, setCompanies] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -57,7 +59,7 @@ export default function AdminCompanies() {
         <div className="space-y-6">
             <div className="flex justify-between items-center bg-white p-6 rounded-lg shadow-sm border border-secondary/20">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-primary">Companies Management</h1>
+                    <h1 className="text-3xl font-bold tracking-tight text-primary">Companies</h1>
                     <p className="text-muted-foreground mt-1">Manage the list of companies associated with products.</p>
                 </div>
                 <NewCompanyModal onSuccess={fetchCompanies} />
@@ -68,8 +70,8 @@ export default function AdminCompanies() {
                     <Table>
                         <TableHeader className="bg-secondary/30">
                             <TableRow>
-                                <TableHead className="font-semibold px-6">Company Name</TableHead>
-                                <TableHead className="font-semibold">Description</TableHead>
+                                <TableHead className="font-semibold px-6 w-[100px]">Logo</TableHead>
+                                <TableHead className="font-semibold">Company Name</TableHead>
                                 <TableHead className="text-right font-semibold px-6">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -85,8 +87,18 @@ export default function AdminCompanies() {
                             ) : (
                                 companies.map((c) => (
                                     <TableRow key={c.id} className="hover:bg-secondary/10 transition-colors">
-                                        <TableCell className="font-medium text-primary px-6">{c.name}</TableCell>
-                                        <TableCell className="text-muted-foreground max-w-md truncate">{c.description || "-"}</TableCell>
+                                        <TableCell className="px-6">
+                                            {c.logoUrl ? (
+                                                <div className="w-10 h-10 rounded-md border overflow-hidden bg-white">
+                                                    <img src={getImageUrl(c.logoUrl)} alt={c.name} className="w-full h-full object-contain" />
+                                                </div>
+                                            ) : (
+                                                <div className="w-10 h-10 rounded-md border bg-secondary/20 flex items-center justify-center text-[10px] text-muted-foreground">
+                                                    No Logo
+                                                </div>
+                                            )}
+                                        </TableCell>
+                                        <TableCell className="font-medium text-primary">{c.name}</TableCell>
                                         <TableCell className="text-right px-6">
                                             <Button
                                                 variant="ghost"

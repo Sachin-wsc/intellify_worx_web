@@ -79,6 +79,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                 Companies
                             </Link>
                             <Link
+                                href="/admin/brands"
+                                className={`px-5 py-2 rounded-full text-sm font-medium transition-colors flex items-center gap-1.5 ${pathname.startsWith('/admin/brands') ? 'bg-primary text-primary-foreground' : 'hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300'}`}
+                            >
+                                Brands
+                            </Link>
+                            <Link
+                                href="/admin/series"
+                                className={`px-5 py-2 rounded-full text-sm font-medium transition-colors flex items-center gap-1.5 ${pathname.startsWith('/admin/series') ? 'bg-primary text-primary-foreground' : 'hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300'}`}
+                            >
+                                Series
+                            </Link>
+                            <Link
                                 href="/admin/equations"
                                 className={`px-5 py-2 rounded-full text-sm font-medium transition-colors flex items-center gap-1.5 ${pathname === '/admin/equations' ? 'bg-primary text-primary-foreground' : 'hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300'}`}
                             >
